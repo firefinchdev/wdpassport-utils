@@ -5,6 +5,8 @@
 # Created: Tue Jan 7 13:13:15 2013
 #      by: funkypopcorn
 #
+# Modified: Sujay Phadke, 2015
+#
 # NOTE: This is my first attempt in python programing
 #       pls don't judge me too hard. :)
 
@@ -146,7 +148,7 @@ class Ui_Frame(object):
                 #finally lets send the SCSI command to encrypt
                 self.textEdit.append("Secure Harddrive identified at /dev/"+cmp)
                 try:
-                    subprocess.check_call("gksudo whoami", shell=True)
+                    #subprocess.check_call("gksudo whoami", shell=True)
                     subprocess.check_call("sudo sg_raw -s 40 -i "+fpathp+" /dev/"+cmp+" c1 e1 00 00 00 00 00 00 28 00", shell=True)
                     self.textEdit.append("Drive is now unlogged and can be mounted!")
                     self.mountBtn.setEnabled(True)
@@ -179,7 +181,7 @@ class Ui_Frame(object):
 
     def autoMount(self):
         try:
-            subprocess.check_call("gksudo whoami", shell=True)
+            #subprocess.check_call("gksudo whoami", shell=True)
             subprocess.call("sudo partprobe", shell=True)
             self.textEdit.setText("Available devices have been updated!")
             try:
