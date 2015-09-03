@@ -287,7 +287,7 @@ class Ui_Frame(object):
 	return    
 
     def showDisclaimer(self):
-	form = MessageBoxDemo("Disclaimer", "This utility is not officially licenced by Western Digital. Western Digital Security is a registered trademark of Western Digital. All other trademarks belong to their respective owners.\n\nThis utility has only been tested with one WD locked drive attached.\nPlease do not connect more than 1 locked USB drives!")
+	form = MessageBoxDemo("Disclaimer", "This utility enables temporary unlock for modern WD drives which support hardware level link encryption.\nIt does not support permanent unlocks(removing security) or the process of locking the drive in the first place.\n\nThis utility is not officially licenced by Western Digital. Western Digital Security is a registered trademark of Western Digital. All other trademarks belong to their respective owners.\n\nThis utility has only been tested with one WD locked drive attached.\nPlease do not connect more than 1 locked USB drives!")
     	#form.show()
     
 
