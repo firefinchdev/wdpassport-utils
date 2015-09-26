@@ -167,7 +167,9 @@ class Ui_Frame(object):
 	pout = p.stdout.read()
 	retcode = p.wait()
 	if pout == "":	
-		self.messageBox.append("No Western Digital drive attached")
+		self.messageBox.append("No Western Digital drive attached.")
+		self.messageBox.append("Please attach a compatible drive and restart.")
+		self.pwBox.setEnabled(False)
 	else:
 		self.messageBox.append("Western Digital Drive found at: " + pout)
 	
@@ -179,6 +181,7 @@ class Ui_Frame(object):
 		if int(pout2) == 0:
 			self.messageBox.append("Either the drive is not locked or doesn't support WD security")
 			self.messageBox.append("If you believe this is false, please re-connect the disk and try again.")
+			self.pwBox.setEnabled(False)
 		else:
 			self.messageBox.append("Checking drive lock status...")
 			self.checkUnlockStatus()
@@ -215,7 +218,10 @@ class Ui_Frame(object):
 
     def callCookingPW(self):
         self.messageBox.append("Calling external cookpw-script...")
+
+	# finish processing all pending events
         app.processEvents()
+
         try:
             pw = str(self.pwBox.text())
 	    self.pwBox.clear()
@@ -223,14 +229,15 @@ class Ui_Frame(object):
             subprocess.check_call("python "+fpathc+" "+pw+" >"+fpathp, shell=True)
     
         except subprocess.CalledProcessError:       
-            self.messageBox.append("Script calling went wrong, pls check if the path to cookpw.py is correct!")
+            self.messageBox.append("Cannot execute 'cookpw.py' script.")
+	    self.messageBox.append("Please check if the path is correct and retry.")
             return
         try:
             with open(fpathp):
-                self.messageBox.append("Sending SCSI commands to encrypt/unlock the drive...")
+                self.messageBox.append("Sending SCSI commands to unlock the drive...")
                 self.unlockDrive()
         except IOError:
-            self.messageBox.append("Something went wrong while executing cookpw.py -> password.bin not created!")
+            self.messageBox.append("Cannot create 'password.bin' file. Check paths, permissions and retry.")
             return
         
 
