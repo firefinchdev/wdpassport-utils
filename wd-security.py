@@ -1,16 +1,15 @@
 #!/usr/bin/env python
-
-# Created: Tue Jan 7 13:13:15 2013
-#      by: funkypopcorn
-#      (https://github.com/funkypopcorn)
 #
-# Modified: Sujay Phadke, 2015
+# Sujay Phadke, 2015
 # email: electronicsguy123@gmail.com
 # github: https://github.com/electronicsguy/
-# 
-# changes:
-# 1. code cleanup
-# 2. added code to detect connected drives, lock status
+#
+# Based on the original design by:
+# funkypopcorn (https://github.com/funkypopcorn) 
+#
+# Changes:
+# 1. Major code cleanup
+# 2. Added code to detect connected drives, lock status
 # 3. Check sudo and required packages at startup
 
 from PyQt4 import QtCore, QtGui
