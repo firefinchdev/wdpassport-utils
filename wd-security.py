@@ -187,12 +187,8 @@ class Ui_Frame(object):
 
     def checkUnlockStatus(self):
 	global PARTNAME
-	cmd = 'ls  -l /dev/disk/by-id | grep "/sd" | grep -i "usb-WD" | perl -pe \'s/(.*?)usb-WD_(.*)-\d:\d -> \.\.\/\.\.\/(.*?)/$2 $3/\''
-	p = subprocess.Popen(cmd, universal_newlines=True, shell=True, 
-		stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-	lines = p.stdout.readlines()
-	numLines = len(lines)
-	retcode = p.wait()
+	
+	numLines = self.getPartname()
 	# to-do: the logic here needs to be changed as in:
 	# if infact multiple locked drives are connected, it'll output
 	# multiple lines (sdb, sdc, etc). That doesn't necessarily mean they are unlocked
@@ -204,9 +200,21 @@ class Ui_Frame(object):
 	else:
 		self.messageBox.append("Drive is already unlocked!")
 		self.pwBox.setEnabled(False)
-		PARTNAME = str(lines[0][-4:-1])	    # ignore trailing newline char
 		self.messageBox.append("Drive device name: " + PARTNAME)
 		self.checkMountStatus()
+
+    def getPartname(self):
+	global PARTNAME
+	
+	cmd = 'ls  -l /dev/disk/by-id | grep "/sd" | grep -i "usb-WD" | perl -pe \'s/(.*?)usb-WD_(.*)-\d:\d -> \.\.\/\.\.\/(.*?)/$2 $3/\''
+	p = subprocess.Popen(cmd, universal_newlines=True, shell=True, 
+		stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+	lines = p.stdout.readlines()
+	numLines = len(lines)
+	retcode = p.wait()
+	PARTNAME = str(lines[0][-4:-1])	    # ignore trailing newline char
+
+	return numLines
 
     def checkMountStatus(self):
 	# to-do: add code to check if partitions are already mounted
@@ -252,6 +260,12 @@ class Ui_Frame(object):
             # check # drives attached
 	    # each drive gets a dmesg id of the form 'sg<nn>'
             cmp = out.split( )[0]
+
+	    # sometimes, the type(sgXX) is in the 7th column and not 8th
+	    if cmp == 'type':
+		out = qx("/bin/dmesg | grep sg | grep \"type 13\" | awk \'{print $7}\'",shell=True)
+                cmp = out.split( )[0]
+
             multipleDevices = False
             for word in out.split( ):
                 if not cmp==word:
@@ -263,34 +277,54 @@ class Ui_Frame(object):
                 try:
                     subprocess.check_call("sudo sg_raw -s 40 -i " + fpathp + " /dev/" + cmp + " c1 e1 00 00 00 00 00 00 28 00", shell=True)
                     self.messageBox.append("The WD Drive is now unlocked and can be mounted!")
-		    self.mountWD()
+		    
                 except subprocess.CalledProcessError:
                     self.messageBox.append("Failure while sending SCSI decrypt command. Check password and connections.")
                     return
+
             else:
-                self.messageBox.append("Multiple SCSI 'type 13' devices recognized. Please unplug everything except the desired drive and retry.")
+                self.messageBox.append("Multiple SCSI 'type 13' devices recognized.")
+		self.messageBox.append("Please unplug everything except the desired drive and retry.")
                 return
+
         except subprocess.CalledProcessError:
             self.messageBox.append("Failure couldn't find 'sg' type within dmesg!")
             return
 
+	# Drive Unlock successful. So try and automount partitions
+	self.pwBox.setEnabled(False)
+        self.decryptBtn.setEnabled(False)
+	self.mountWD()
+
 
     def mountWD(self):
 	global PARTNAME
-            
-        subprocess.call("sudo partprobe 2>/dev/null", shell=True)
-        self.messageBox.append("Available devices have been updated!")
+        
+	# Needs to be called since PARTNAME may be empty at start
+	self.getPartname()
 
+	# Note: 'partprobe' will always exit with an error (The partition's data region doesn't occupy the entire partition)
+	# since the virtual CD drive is not writable
+	# partprobe simply informs the OS that new partitions are available on the unlocked drive
+	# They are actually mounted using the 'udisksctl' command. (or by clicking on the partiion name in the file
+	# manager GUI, if it supports automount
+
+       	subprocess.call("sudo partprobe 2>/dev/null", shell=True)
+       	self.messageBox.append("Available devices have been updated!")
+
+	# to-do: see if the hard-coded first partition '1' needs to be made flexible
 	devname = '/dev/' + PARTNAME + '1'
 	self.messageBox.append('Mounting device: ' + devname)
-        subprocess.check_call("udisksctl mount -b " + devname + " &>/dev/null", shell=True)
-        self.messageBox.append("WD Harddrive decrypted and mounted successfully!")
+	subprocess.call("udisksctl mount -b " + devname + " &>/dev/null", shell=True)
 
-	self.pwBox.setEnabled(False)
-	self.decryptBtn.setEnabled(False)
+       	self.messageBox.append("WD Harddrive decrypted and mounted successfully!")
+
+	self.messageBox.append('\nNote: In some rare cases, the partitions may still not be mounted.')
+	self.messageBox.append('In this case, please mount them manually using "mount".')
+
 	self.mountBtn.setEnabled(False)        
 
-	return    
+	return
 
     def showDisclaimer(self):
 	form = MessageBoxDemo("Disclaimer", "This utility enables temporary unlock for modern WD drives which support hardware level link encryption.\nIt does not support permanent unlocks(removing security) or the process of locking the drive in the first place.\n\nThis utility is not officially licenced by Western Digital. Western Digital Security is a registered trademark of Western Digital. All other trademarks belong to their respective owners.\n\nThis utility has only been tested with one WD locked drive attached.\nPlease do not connect more than 1 locked USB drives!")
